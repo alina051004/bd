@@ -1,0 +1,96 @@
+--создание пользователя sa c паролем De_05
+CREATE LOGIN sa WITH PASSWORD = 'De_05';
+
+
+--создание таблицы  "BD" и таблицы "Users"
+CREATE DATABASE BD;
+
+USE BD;
+
+CREATE TABLE Users (
+    UserID INT PRIMARY KEY,
+    Username VARCHAR(50),
+    PasswordHash VARCHAR(255)
+);
+
+USE BD;
+
+DECLARE @counter INT = 1;
+DECLARE @username VARCHAR(50);
+DECLARE @password VARCHAR(10);
+DECLARE @sql NVARCHAR(MAX);
+
+WHILE @counter <= 10
+BEGIN
+    SET @username = 'user' + CAST(@counter AS VARCHAR);
+    SET @password = '';
+
+    -- Генерация случайного пароля из букв и цифр
+    DECLARE @chars VARCHAR(36) = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    DECLARE @length INT = 5;
+    DECLARE @index INT = 1;
+
+    WHILE @index <= @length
+    BEGIN
+        SET @password = @password + SUBSTRING(@chars, CAST(RAND() * LEN(@chars) + 1 AS INT), 1);
+        SET @index = @index + 1;
+    END;
+
+    -- Создание пользователя и базы данных
+    SET @sql = 'CREATE LOGIN ' + QUOTENAME(@username) + ' WITH PASSWORD = ''' + @password + ''';';
+    EXEC sp_executesql @sql;
+
+    SET @sql = 'CREATE DATABASE BD' + CAST(@counter AS VARCHAR) + ';';
+    EXEC sp_executesql @sql;
+
+    SET @sql = 'USE BD' + CAST(@counter AS VARCHAR) + ';
+                CREATE USER ' + QUOTENAME(@username) + ' FOR LOGIN ' + QUOTENAME(@username) + ';
+                GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO ' + QUOTENAME(@username) + ';';
+    EXEC sp_executesql @sql;
+
+    -- Заполнение таблицы Users данными
+    INSERT INTO Users (UserID, Username, PasswordHash)
+    VALUES (@counter, @username, HASHBYTES('SHA2_256', @password));
+
+    SET @counter = @counter + 1;
+END;
+
+
+USE BD;
+
+-- Создание хранимой процедуры для шифрования паролей
+CREATE PROCEDURE EncryptPassword
+AS
+BEGIN
+    UPDATE Users
+    SET PasswordHash = HASHBYTES('SHA2_256', PasswordHash);
+END;
+GO
+
+USE BD;
+
+-- Вызов хранимой процедуры для шифрования паролей
+EXEC EncryptPassword;
+
+USE BD;
+
+-- Создание хранимой процедуры для расшифровки паролей
+CREATE PROCEDURE DecryptPassword
+AS
+BEGIN
+    SELECT UserID, Username, CONVERT(VARCHAR(MAX), DECRYPTBYASYMKEY(ASYMKEY_ID('AsymmetricKey'), PasswordHash)) AS DecryptedPassword
+    FROM Users;
+END;
+GO
+
+-- Вызов хранимой процедуры для расшифровки паролей
+EXEC DecryptPassword;
+
+
+
+--команда резервного копирования журнала транзакций
+BACKUP DATABASE BD TO DISK = 'C:\Backup\BD.bak';
+
+--восстановление базы данных с использованием резервной копии базы данных и резервной копии журнала транзакций
+USE master;
+RESTORE DATABASE BD FROM DISK = 'C:\Backup\BD.bak' WITH REPLACE, RECOVERY;
