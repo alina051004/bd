@@ -1,0 +1,113 @@
+using System;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using Microsoft.EntityFrameworkCore;
+using TradingApp.Models;
+
+namespace TradingApp
+{
+    public partial class MainWindow : Window
+    {
+        private TradingDbContext _context;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            _context = new TradingDbContext();
+            LoadData();
+        }
+
+        private void LoadData()
+        {
+            _context.Customers.Load();
+            clientComboBox.ItemsSource = _context.Customers.Local.ToObservableCollection();
+            _context.Orders.Include(o => o.Customer).Include(o => o.OrderStatus).Load();
+            ordersDataGrid.ItemsSource = _context.Orders.Local.ToObservableCollection();
+        }
+
+        private void FilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedCustomer = clientComboBox.SelectedItem as Customer;
+            if (selectedCustomer != null)
+            {
+                ordersDataGrid.ItemsSource = _context.Orders.Local
+                    .Where(o => o.CustomerID == selectedCustomer.CustomerID)
+                    .ToList();
+            }
+        }
+
+        private void ShowAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            ordersDataGrid.ItemsSource = _context.Orders.Local.ToObservableCollection();
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            var searchText = searchTextBox.Text.ToLower();
+            foreach (var row in ordersDataGrid.Items)
+            {
+                var dataGridRow = ordersDataGrid.ItemContainerGenerator.ContainerFromItem(row) as DataGridRow;
+                if (dataGridRow != null)
+                {
+                    foreach (var column in ordersDataGrid.Columns)
+                    {
+                        var cellContent = column.GetCellContent(dataGridRow) as TextBlock;
+                        if (cellContent != null && cellContent.Text.ToLower().Contains(searchText))
+                        {
+                            cellContent.Background = Brushes.Yellow;
+                        }
+                        else
+                        {
+                            cellContent.Background = Brushes.White;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ClientComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            FilterButton_Click(sender, e);
+        }
+
+        private void SortData()
+        {
+            var sortField = (sortFieldComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            var sortOrder = ((bool) (sortOrderRadioButtonAsc.IsChecked) ? "asc" : "desc");
+
+            if (sortField == "Клиент")
+            {
+                if (sortOrder == "asc")
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderBy(o => o.Customer.LastName).ToList();
+                else
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderByDescending(o => o.Customer.LastName).ToList();
+            }
+            else if (sortField == "Дата заказа")
+            {
+                if (sortOrder == "asc")
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderBy(o => o.OrderDate).ToList();
+                else
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderByDescending(o => o.OrderDate).ToList();
+            }
+            else if (sortField == "Статус заказа")
+            {
+                if (sortOrder == "asc")
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderBy(o => o.OrderStatus.StatusName).ToList();
+                else
+                    ordersDataGrid.ItemsSource = _context.Orders.Local.OrderByDescending(o => o.OrderStatus.StatusName).ToList();
+            }
+        }
+
+        private void SortOrderRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            SortData();
+        }
+
+        private void SortFieldComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SortData();
+        }
+    }
+}
