@@ -1,0 +1,46 @@
+<Window x:Class="TradingApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Работа с заказами клиентов" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Vertical" Margin="10">
+            <TextBlock Text="Работа с заказами клиентов" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Выберите клиента" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Name="clientComboBox" Width="150" Margin="0,0,10,0" SelectionChanged="ClientComboBox_SelectionChanged"/>
+                <Button Content="Фильтровать" Width="100" Margin="0,0,10,0" Click="FilterButton_Click"/>
+                <Button Content="Показать все" Width="100" Click="ShowAllButton_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Введите строку поиска" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox Name="searchTextBox" Width="200" Margin="0,0,10,0"/>
+                <Button Content="Найти" Width="100" Click="SearchButton_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Выберите поле для сортировки" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Name="sortFieldComboBox" Width="150" Margin="0,0,10,0">
+                    <ComboBoxItem Content="Клиент"/>
+                    <ComboBoxItem Content="Дата заказа"/>
+                    <ComboBoxItem Content="Статус заказа"/>
+                </ComboBox>
+                <RadioButton GroupName="sortOrder" Content="По возрастанию" IsChecked="True" Margin="0,0,10,0"/>
+                <RadioButton GroupName="sortOrder" Content="По убыванию"/>
+            </StackPanel>
+        </StackPanel>
+
+        <DataGrid Name="ordersDataGrid" Grid.Row="1" AutoGenerateColumns="False" Margin="10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Клиент" Binding="{Binding Customer.FirstName}" Width="*"/>
+                <DataGridTextColumn Header="Телефон" Binding="{Binding Customer.Phone}" Width="*"/>
+                <DataGridTextColumn Header="Электронная почта" Binding="{Binding Customer.Email}" Width="*"/>
+                <DataGridTextColumn Header="Дата заказа" Binding="{Binding OrderDate}" Width="*"/>
+                <DataGridTextColumn Header="Статус заказа" Binding="{Binding OrderStatus.StatusName}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>
